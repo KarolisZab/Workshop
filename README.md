@@ -38,7 +38,7 @@ Administratorius galės:
 6. Sukurti darbuotojo darbų aprašymą;
 7. Redaguoti darbuotojo darbų aprašymą;
 
-adzdfa
+2. adzdfa
 Sistemos sudedamosios dalys:
 
   •Kliento pusė (angl. Front-End) – naudojant Vue.js technologiją;
