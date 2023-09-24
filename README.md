@@ -5,6 +5,7 @@
 1.1. Sistemos paskirtis: 
 
    Projekto tikslas – palengvinti dirbtuvėse darbus atliekančių darbuotojų kasdienybę, darbų registravimą, pasiskirstymą.
+   
    Veikimo principas – kuriamą sistemą sudaro internetinė svetainė, kuria naudosis dirbtuvėse esantys darbuotojai ir dirbtuvių administratoriai.
    
    Dirbtuvės darbuotojas, norėdamas naudotis šia sistema, prisiregistruos prie internetinės svetainės ir gales susidaryti savo darbo dienotvarkės veiklas, pridėti sau darbus, redaguoti savo priskirtus darbus, pašalinti užduotis. Administratorius tvirtina dirbtuvės darbuotojų registracijas, peržiūri darbuotojų susidarytus dienotvarkės darbus, priskirti naujus, redaguoti esamus, pašalinti nereikalingus ar jau įvykdytus.
