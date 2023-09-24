@@ -36,7 +36,7 @@ Administratorius galės:
 4. Pašalinti darbuotojo darbus;
 5. Redaguoti darbuotojo darbus;
 6. Sukurti darbuotojo darbų aprašymą;
-7. Redaguoti darbuotojo darbų aprašymą;
+7. Redaguoti darbuotojo darbų aprašymą.
 
 2. adzdfa
 Sistemos sudedamosios dalys:
