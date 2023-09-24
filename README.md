@@ -41,7 +41,7 @@ Administratorius galės:
 8. Šalinti darbuotojo darbų aprašymą.
 
 
-Sistemos architektūra.
+2. Sistemos architektūra.
 
 Sistemos sudedamosios dalys:
 
