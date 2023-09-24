@@ -41,12 +41,12 @@ Administratorius galės:
 8. Šalinti darbuotojo darbų aprašymą.
 
 
-2. Sistemos architektūra.
+Sistemos architektūra:
 
 Sistemos sudedamosios dalys:
 
-   • Kliento pusė (angl. Front-End) – naudojant Vue.js technologiją;
-   • Serverio pusė (angl. Back-End) – naudojant PHP Symfony framework;
-   • Duomenų bazė – MongoDB.
+1. Kliento pusė (angl. Front-End) – naudojant Vue.js technologiją;
+2. Serverio pusė (angl. Back-End) – naudojant PHP Symfony framework;
+3. Duomenų bazė – MongoDB.
    
 Sistemos talpinimui naudojamas Azure serveris. Kiekviena sistemos dalis yra diegiama tame pačiame serveryje. Internetinę aplikaciją bus galima pasiekti per HTTP protokolą. Duomenų apsikeitimui su duomenų baze bus naudojamas Workshop API, kuris vykdo duomenų apsikeitimą naudojant ORM sąsają.
