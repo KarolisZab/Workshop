@@ -39,7 +39,6 @@ Administratorius galės:
 7. Redaguoti darbuotojo darbų aprašymą;
 8. Šalinti darbuotojo darbų aprašymą;
 
-
 2. Sistemos architektūra
    
 Sistemos sudedamosios dalys:
