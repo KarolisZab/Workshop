@@ -1,8 +1,9 @@
 # Workshop
 
-1. Sprendžiamo uždavinio aprašymas
+1. Sprendžiamo uždavinio aprašymas.
 
-1.1. Sistemos paskirtis
+1.1. Sistemos paskirtis: 
+
    Projekto tikslas – palengvinti dirbtuvėse darbus atliekančių darbuotojų kasdienybę, darbų registravimą, pasiskirstymą.
    Veikimo principas – kuriamą sistemą sudaro internetinė svetainė, kuria naudosis dirbtuvėse esantys darbuotojai ir dirbtuvių administratoriai.
    
@@ -40,7 +41,7 @@ Administratorius galės:
 8. Šalinti darbuotojo darbų aprašymą.
 
 
-   2. Sistemos architektūra:
+Sistemos architektūra.
 
 Sistemos sudedamosios dalys:
 
