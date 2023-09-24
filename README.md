@@ -38,9 +38,9 @@ Administratorius galės:
 6. Sukurti darbuotojo darbų aprašymą;
 7. Redaguoti darbuotojo darbų aprašymą;
 8. Šalinti darbuotojo darbų aprašymą.
-   
 
 2. Sistemos architektūra
+
 Sistemos sudedamosios dalys:
 
   •Kliento pusė (angl. Front-End) – naudojant Vue.js technologiją;
