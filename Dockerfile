@@ -1,5 +1,6 @@
 FROM php:8.1-apache
-RUN apt-get update && apt-get install -y \
+RUN curl https://repo.mongodb.org/apt/debian/dists/bullseye/mongodb-org/4.4/main/binary-amd64/mongodb-database-tools_100.5.3_amd64.deb -L -o /tmp/mongo-tools.deb \
+    && apt-get update && apt-get install -y \
         git \
         libpq-dev \
         libcurl4-openssl-dev \
@@ -11,7 +12,9 @@ RUN apt-get update && apt-get install -y \
         python3-pip \
         libicu-dev \
         libapache2-mod-security2 \
-        libxml2-dev
+        libxml2-dev \
+        /tmp/mongo-tools.deb \
+    && rm -rf /tmp/mongo-tools.deb
 
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 RUN locale-gen

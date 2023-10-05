@@ -8,3 +8,12 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/var/www/html:rw,cached
+
+  mongo:
+    container_name: workshop_mongo
+    image: mongo:4.2
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
