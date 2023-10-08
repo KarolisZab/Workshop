@@ -8,7 +8,7 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 #[MongoDB\Document(repositoryClass: WorkshopRepository::class)]
 class Workshop
 {
-    #[MongoDB\Id(type: "string", strategy: "UUID")]
+    #[MongoDB\Id(type: "string", strategy: "INCREMENT")]
     protected ?string $id = null;
     #[MongoDB\Field(type: "string")]
     protected string $title;
