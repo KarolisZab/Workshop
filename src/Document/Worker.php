@@ -9,12 +9,13 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 #[MongoDB\Document(repositoryClass: WorkerRepository::class)]
 class Worker
 {
-    #[MongoDB\Id(type: "string", strategy: "UUID")]
+    #[MongoDB\Id(type: "string", strategy: "INCREMENT")]
     protected ?string $id = null;
     #[MongoDB\Field(type: "string")]
     protected string $name;
     #[MongoDB\Field(type: "string")]
     protected string $surname;
+    #[MongoDB\ReferenceOne(targetDocument: Workshop::class, inversedBy: "id")]
     protected string $workshopId;
 
 

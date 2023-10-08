@@ -4,6 +4,7 @@ namespace App\Document;
 
 use App\Repository\WorkshopRepository;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[MongoDB\Document(repositoryClass: WorkshopRepository::class)]
 class Workshop
