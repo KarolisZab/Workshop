@@ -11,10 +11,20 @@ class Duty
 {
     #[MongoDB\Id(type: "string", strategy: "INCREMENT")]
     protected ?string $id = null;
+
+    #[Assert\NotNull()]
+    #[Assert\Length(['min' => 4, 'max' => 20])]
+    #[Assert\NotBlank()]
     #[MongoDB\Field(type: "string")]
     protected string $duty;
+
+    #[Assert\NotNull()]
+    #[Assert\Length(['min' => 10, 'max' => 155])]
+    #[Assert\NotBlank()]
     #[MongoDB\Field(type: "string")]
     protected ?string $description;
+
+    #[MongoDB\ReferenceOne(targetDocument: Worker::class)]
     protected string $workerId;
     
 
@@ -23,12 +33,12 @@ class Duty
         return $this->id;
     }
 
-    public function getDuty(): string
+    public function getDuty(): ?string
     {
         return $this->duty;
     }
 
-    public function setDuty(string $duty): self
+    public function setDuty(?string $duty): self
     {
         $this->duty = $duty;
         return $this;

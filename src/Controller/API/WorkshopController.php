@@ -20,7 +20,7 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 #[Route('/api/workshop')]
 class WorkshopController extends AbstractController
 {
-    public function __construct(private DocumentManager $documentManager, private SerializerInterface $serializer) // private ValidatorInterface $validatorInterface)
+    public function __construct(private DocumentManager $documentManager, private SerializerInterface $serializer, private ValidatorInterface $validatorInterface)
     {
         
     }
@@ -53,33 +53,55 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('', name: 'workshop_post', methods: ['POST'])]
-    public function createWorkshop(Request $request)
+    public function createWorkshop(Request $request, ValidatorInterface $validator)
     {
+        try {
+            $parameters = json_decode($request->getContent(), true);
 
-        $parameters = json_decode($request->getContent(), true);
+            $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['title' => $parameters['title']]);
 
-        $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['title' => $parameters['title']]);
-    
-        if ($existingWorkshop) {
-        // Workshop with the same title already exists, return an error response
-            return new JsonResponse('Workshop with the same title already exists.', JsonResponse::HTTP_CONFLICT);
+            if ($existingWorkshop) {
+                // Workshop with the same title already exists, return an error response
+                    return new JsonResponse('Workshop with the same title already exists.', JsonResponse::HTTP_CONFLICT);
+            }
+
+            $workshop = new Workshop();
+            $workshop->setTitle($parameters['title'])
+                    ->setCategory($parameters['category']);
+
+
+
+            $errors = $validator->validate($workshop);
+
+            if (count($errors) > 0) {
+                // Handle validation errors, for example, return a 400 Bad Request response
+                $validationErrors = [];
+                foreach ($errors as $error) 
+                {
+                    $validationErrors[$error->getPropertyPath()] = $error->getMessage();
+                }
+
+                return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $this->documentManager->persist($workshop);
+            $this->documentManager->flush();
+
+
+            return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_CREATED, [], true);
+        } 
+        catch (\Exception $exception) 
+        {
+            return new JsonResponse($exception->getMessage(), 400);
         }
-
-        $workshop = new Workshop();
-        $workshop->setTitle($parameters['title'])
-            ->setCategory($parameters['category']);
-
-
-        $this->documentManager->persist($workshop);
-        $this->documentManager->flush();
-
-        return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_CREATED, [], true);
     }
 
     #[Route('/{id}', name: 'workshop_patch', methods: ['PATCH'])]
-    public function updateWorkshop(Request $request, string $id)
+    public function updateWorkshop(Request $request, string $id, ValidatorInterface $validator)
     {
-        /** @var WorkshopRepository $workshopRepository */
+        try 
+        {
+            /** @var WorkshopRepository $workshopRepository */
         $workshopRepository = $this->documentManager->getRepository(Workshop::class);
 
         $workshop = $workshopRepository->find($id);
@@ -89,8 +111,6 @@ class WorkshopController extends AbstractController
             return new JsonResponse('404 Not Found', JsonResponse::HTTP_NOT_FOUND);
         }
 
-        // upd
-
         // pasiemu parametrus
         $parameters = json_decode($request->getContent(), true);
 
@@ -99,15 +119,31 @@ class WorkshopController extends AbstractController
                 ->setCategory($parameters['category']);
 
         // validation
+        $errors = $validator->validate($workshop);
         
+        if (count($errors) > 0) {
+            // Handle validation errors, for example, return a 400 Bad Request response
+            $validationErrors = [];
+            foreach ($errors as $error) 
+            {
+                $validationErrors[$error->getPropertyPath()] = $error->getMessage();
+            }
+
+            return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
 
         $this->documentManager->flush();
 
         return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_OK, [], true);
+        } 
+        catch (\Exception $exception) 
+        {
+            return new JsonResponse($exception->getMessage(), 400);
+        }
     }
 
     #[Route('/{id}', name: 'workshop_delete', methods: ['DELETE'])]
-    public function deleteWorkshop(Request $request, string $id)
+    public function deleteWorkshop(Request $request, string $id, ValidatorInterface $validator)
     {
         /** @var WorkshopRepository $workshopRepository */
         $workshopRepository = $this->documentManager->getRepository(Workshop::class);
@@ -125,22 +161,25 @@ class WorkshopController extends AbstractController
         return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_OK, [], true);
     }
 
-    // #[Route('/{workshopId}/worker/{workerId}', name: 'worker_get', methods: ['GET'])]
-    // public function getWorkshopWorker(Request $request, string $workshopId, string $workerId)
-    // {
-    //     /** @var WorkshopRepository $workshopRepository */
-    //     $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+    ////////// 2nd level domain ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //     $worker = $workerRepository->findOneBy([
-    //         '_id' => $workerId,
-    //         'workshopId' => $workshopId
-    //     ]);
+    #[Route('/{id}/worker/{workerId}', name: 'worker_get', methods: ['GET'])]
+    public function getWorkshopWorker(Request $request, string $workshopId, string $workerId)
+    {
+        /** @var WorkshopRepository $workshopRepository */
+        $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+        $workerRepository = $this->documentManager->getRepository(Worker::class);
 
-    //     if($worker === null)
-    //     {
-    //         return new JsonResponse('404 Not Found', JsonResponse::HTTP_NOT_FOUND);
-    //     }
+        $worker = $workerRepository->findOneBy([
+            '_id' => $workerId,
+            'workshopId' => $workshopId
+        ]);
 
-    //     return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_OK, [], true);
-    // }
+        if($worker === null)
+        {
+            return new JsonResponse('404 Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_OK, [], true);
+    }
 }
