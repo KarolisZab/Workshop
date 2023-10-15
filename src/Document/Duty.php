@@ -13,7 +13,7 @@ class Duty
     protected ?string $id = null;
 
     #[Assert\NotNull()]
-    #[Assert\Length(['min' => 4, 'max' => 20])]
+    #[Assert\Length(['min' => 4, 'max' => 50])]
     #[Assert\NotBlank()]
     #[MongoDB\Field(type: "string")]
     protected string $duty;

@@ -247,7 +247,7 @@ class WorkshopController extends AbstractController
 
             if ($existingWorkshop === null) {
                 // Workshop with the same title already exists, return an error response
-                    return new JsonResponse('Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+                    return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
             
             $worker = new Worker();
@@ -383,5 +383,247 @@ class WorkshopController extends AbstractController
 
     ////////////////////////////// 3rd level ////////////////////////////////////////////////////////////////////////////
 
+    #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'worker_duty_get', methods: ['GET'])]
+    public function getWorkshopWorkerDuty(Request $request, string $workerId, string $id, string $dutyId)
+    {
+        // pagetint viena konkrecius workshopo darbuotojo duties
+        
+        /** @var WorkshopRepository $workshopRepository */
+        $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+        /** @var WorkerRepository $workerRepository */
+        $workerRepository = $this->documentManager->getRepository(Worker::class);
+        /** @var DutyRepository $dutyRepository */
+        $dutyRepository = $this->documentManager->getRepository(Duty::class);
 
+        $workshop = $workshopRepository->find($id);
+        
+        if($workshop === null)
+        {
+            return new JsonResponse('404 Workshop Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $worker = $workerRepository->find($workerId); // visu pirma randam to workshop route'o id workshopo.
+
+        if($worker === null)
+        {
+            return new JsonResponse('404 Worker Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $duties = $dutyRepository->findOneBy([
+            '_id' => $dutyId,
+            'workerId' => $workerId
+        ]);
+
+        if($duties === null)
+        {
+            return new JsonResponse('404 Duties Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        return new JsonResponse($this->serializer->serialize($duties, 'json'), JsonResponse::HTTP_OK, [], true);
+    }
+
+    #[Route('/{id}/workers/{workerId}/duties', name: 'get_worker_duties_in_workshop', methods: ['GET'])]
+    public function getWorkerDuties(Request $request, string $id, string $workerId)
+    {
+        // Get all duties in a specific workshop
+
+        /** @var WorkshopRepository $workshopRepository */
+        $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+        /** @var WorkerRepository $workerRepository */
+        $workerRepository = $this->documentManager->getRepository(Worker::class);
+        /** @var DutyRepository $dutyRepository */
+        $dutyRepository = $this->documentManager->getRepository(Duty::class);
+
+        /** @var Workshop $workshop */
+        $workshop = $workshopRepository->find($id);
+
+        if ($workshop === null) {
+            return new JsonResponse('404 Workshop Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $workers = $workerRepository->find($workerId);
+
+        if($workers === null)
+        {
+            return new JsonResponse('404 Worker Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $duties = $dutyRepository->findBy(['workerId' => $workerId]);
+
+        return new JsonResponse($this->serializer->serialize($duties, 'json'), JsonResponse::HTTP_OK, [], true);
+    }
+
+    #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'workshop_worker_duties_post_to_id', methods: ['POST'])]
+    public function postToIdDuties(Request $request, string $id, string $workerId, string $dutyId)
+    {
+        if ($request->isMethod('POST')) {
+            return new JsonResponse('POST request to /api/workshop/id/workers/id/duties/ud is not allowed.', JsonResponse::HTTP_METHOD_NOT_ALLOWED);
+        }
+
+        // Handle other scenarios, if needed
+    }
+
+    #[Route('/{id}/workers/{workerId}/duties', name: 'workshop_worker_duty_post', methods: ['POST'])]
+    public function createWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId)
+    {
+        try {
+            $parameters = json_decode($request->getContent(), true);
+
+            $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
+
+            if ($existingWorkshop === null) {
+                // Workshop with the same title already exists, return an error response
+                    return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+            
+            $existingWorker = $this->documentManager->getRepository(Worker::class)->findOneBy(['_id' => $workerId]);
+
+            if($existingWorker === null) {
+                return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            $duty = new Duty();
+            $duty->setDuty($parameters['duty'])
+                ->setDescription($parameters['description'])
+                ->setWorkerId($workerId);
+
+
+            $errors = $validator->validate($duty);
+
+            if (count($errors) > 0) {
+                // Handle validation errors, for example, return a 400 Bad Request response
+                $validationErrors = [];
+                foreach ($errors as $error) 
+                {
+                    $validationErrors[$error->getPropertyPath()] = $error->getMessage();
+                }
+
+                return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $this->documentManager->persist($duty);
+            $this->documentManager->flush();
+
+
+            return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_CREATED, [], true);
+        } 
+        catch (\Exception $exception) 
+        {
+            return new JsonResponse($exception->getMessage(), 400);
+        }
+    }
+
+    #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'workshop_worker_duty_patch', methods: ['PATCH'])]
+    public function updateWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId, string $dutyId)
+    {
+        try {
+            $parameters = json_decode($request->getContent(), true);
+
+
+            /** @var WorkshopRepository $workshopRepository */
+            $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+            /** @var WorkerRepository $workerRepository */
+            $workerRepository = $this->documentManager->getRepository(Worker::class);
+            /** @var DutyRepository $dutyRepository */
+            $dutyRepository = $this->documentManager->getRepository(Duty::class);
+
+            $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
+
+            if ($existingWorkshop === null) {
+                // Workshop with the same title already exists, return an error response
+                    return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
+            $worker = $workerRepository->find($workerId);
+
+            if($worker === null)
+            {
+                return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            $duty = $dutyRepository->find($dutyId);
+
+            if($duty === null)
+            {
+                return new JsonResponse('404 Duty doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            $workerIdFromBody = $parameters['workerId'];
+            $workerFromBody = $workerRepository->find($workerIdFromBody);
+
+            if($workerFromBody === null)
+            {
+                return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            $duty->setDuty($parameters['duty'])
+                ->setDescription($parameters['description'])
+                ->setWorkerId($workerIdFromBody);
+                //->setWorkshopId($parameters['workshopId']);
+
+
+            $errors = $validator->validate($duty);
+
+            if (count($errors) > 0) {
+                // Handle validation errors, for example, return a 400 Bad Request response
+                $validationErrors = [];
+                foreach ($errors as $error) 
+                {
+                    $validationErrors[$error->getPropertyPath()] = $error->getMessage();
+                }
+
+                return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $this->documentManager->flush();
+
+
+            return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_CREATED, [], true);
+        } 
+        catch (\Exception $exception) 
+        {
+            return new JsonResponse($exception->getMessage(), 400);
+        }
+    }
+
+    #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'workshop_worker_duty_delete', methods: ['DELETE'])]
+    public function deleteWorkshopWorkerDuty(Request $request, string $id, ValidatorInterface $validator, string $workerId, string $dutyId)
+    {
+        /** @var WorkshopRepository $workshopRepository */
+        $workshopRepository = $this->documentManager->getRepository(Workshop::class);
+        /** @var WorkerRepository $workerRepository */
+        $workerRepository = $this->documentManager->getRepository(Worker::class);
+        /** @var DutyRepository $dutyRepository */
+        $dutyRepository = $this->documentManager->getRepository(Duty::class);
+
+        $workshop = $workshopRepository->find($id);
+        
+        if($workshop === null)
+        {
+            return new JsonResponse('404 Workshop Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $worker = $workerRepository->find($workerId);
+
+        if($worker === null)
+        {
+            return new JsonResponse('404 Worker Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $duty = $dutyRepository->findOneBy([
+            '_id' => $dutyId,
+            'workerId' => $workerId
+        ]);
+
+        if($duty === null)
+        {
+            return new JsonResponse('404 Duty Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        $this->documentManager->remove($duty);
+        $this->documentManager->flush();
+
+        return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_OK, [], true);
+    } 
 }
