@@ -26,7 +26,7 @@ class Worker
     #[MongoDB\Field(type: "string")]
     protected string $surname;
 
-    #[MongoDB\ReferenceOne(targetDocument: Workshop::class)]
+    #[MongoDB\Field(type: "string")]
     protected string $workshopId;
 
 
@@ -54,6 +54,17 @@ class Worker
     public function setSurname(?string $surname): self
     {
         $this->surname = $surname;
+        return $this;
+    }
+
+    public function getWorkshopId(): string
+    {
+        return $this->workshopId;
+    }
+
+    public function setWorkshopId(string $workshopId): self
+    {
+        $this->workshopId = $workshopId;
         return $this;
     }
 }

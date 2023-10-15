@@ -16,6 +16,7 @@ class Workshop
     #[Assert\NotNull()]
     #[Assert\Length(['min' => 4, 'max' => 20])]
     #[Assert\NotBlank()]
+    //[Assert\Unique(message: "Workshop with the same title already exists")]
     #[MongoDB\Field(type: "string")]
     protected ?string $title;
 

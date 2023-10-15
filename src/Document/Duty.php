@@ -24,7 +24,7 @@ class Duty
     #[MongoDB\Field(type: "string")]
     protected ?string $description;
 
-    #[MongoDB\ReferenceOne(targetDocument: Worker::class)]
+    #[MongoDB\Field(type: "string")]
     protected string $workerId;
     
 
@@ -52,6 +52,17 @@ class Duty
     public function setDescription(?string $description): self
     {
         $this->description = $description;
+        return $this;
+    }
+
+    public function getWorkerId(): string
+    {
+        return $this->workerId;
+    }
+
+    public function setWorkerId(string $workerId): self
+    {
+        $this->workerId = $workerId;
         return $this;
     }
 }
