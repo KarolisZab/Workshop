@@ -411,7 +411,8 @@ class WorkshopController extends AbstractController
 
         $duties = $dutyRepository->findOneBy([
             '_id' => $dutyId,
-            'workerId' => $workerId
+            'workerId' => $workerId,
+            'workshopId' => $id
         ]);
 
         if($duties === null)
@@ -448,7 +449,12 @@ class WorkshopController extends AbstractController
             return new JsonResponse('404 Worker Not Found', JsonResponse::HTTP_NOT_FOUND);
         }
 
-        $duties = $dutyRepository->findBy(['workerId' => $workerId]);
+        $duties = $dutyRepository->findBy(['workerId' => $workerId, 'workshopId' => $id]);
+
+        if($duties === null)
+        {
+            return new JsonResponse('404 Duties Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
 
         return new JsonResponse($this->serializer->serialize($duties, 'json'), JsonResponse::HTTP_OK, [], true);
     }
@@ -485,7 +491,8 @@ class WorkshopController extends AbstractController
             $duty = new Duty();
             $duty->setDuty($parameters['duty'])
                 ->setDescription($parameters['description'])
-                ->setWorkerId($workerId);
+                ->setWorkerId($workerId)
+                ->setWorkshopId($id);
 
 
             $errors = $validator->validate($duty);
@@ -519,7 +526,6 @@ class WorkshopController extends AbstractController
         try {
             $parameters = json_decode($request->getContent(), true);
 
-
             /** @var WorkshopRepository $workshopRepository */
             $workshopRepository = $this->documentManager->getRepository(Workshop::class);
             /** @var WorkerRepository $workerRepository */
@@ -533,6 +539,14 @@ class WorkshopController extends AbstractController
                 // Workshop with the same title already exists, return an error response
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
+
+            $workshop = $workshopRepository->find($id);
+            
+            if($workshop === null) 
+            {
+                return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
 
             // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
             $worker = $workerRepository->find($workerId);
@@ -549,18 +563,18 @@ class WorkshopController extends AbstractController
                 return new JsonResponse('404 Duty doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
 
-            $workerIdFromBody = $parameters['workerId'];
-            $workerFromBody = $workerRepository->find($workerIdFromBody);
+            //$workerIdFromBody = $parameters['workerId'];
+            //$workerFromBody = $workerRepository->find($workerIdFromBody);
 
-            if($workerFromBody === null)
-            {
-                return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
-            }
+            // if($workerFromBody === null)
+            // {
+            //     return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            // }
 
             $duty->setDuty($parameters['duty'])
                 ->setDescription($parameters['description'])
-                ->setWorkerId($workerIdFromBody);
-                //->setWorkshopId($parameters['workshopId']);
+                ->setWorkerId($workerId);
+                //->setWorkerId($parameters['workerId']);
 
 
             $errors = $validator->validate($duty);
@@ -579,9 +593,9 @@ class WorkshopController extends AbstractController
             $this->documentManager->flush();
 
 
-            return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_CREATED, [], true);
+            return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_OK, [], true);
         } 
-        catch (\Exception $exception) 
+        catch (\Exception $exception)
         {
             return new JsonResponse($exception->getMessage(), 400);
         }
@@ -613,7 +627,8 @@ class WorkshopController extends AbstractController
 
         $duty = $dutyRepository->findOneBy([
             '_id' => $dutyId,
-            'workerId' => $workerId
+            'workerId' => $workerId,
+            'workshopId' => $id
         ]);
 
         if($duty === null)

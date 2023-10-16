@@ -26,6 +26,9 @@ class Duty
 
     #[MongoDB\Field(type: "string")]
     protected string $workerId;
+
+    #[MongoDB\Field(type: "string")]
+    protected string $workshopId;
     
 
     public function getId(): ?string
@@ -63,6 +66,18 @@ class Duty
     public function setWorkerId(string $workerId): self
     {
         $this->workerId = $workerId;
+        return $this;
+    }
+
+
+    public function getWorkshopId(): string
+    {
+        return $this->workshopId;
+    }
+
+    public function setWorkshopId(string $workshopId): self
+    {
+        $this->workshopId = $workshopId;
         return $this;
     }
 }
