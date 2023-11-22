@@ -28,6 +28,13 @@ RUN set -eux; \
     composer clear-cache
 ENV PATH="${PATH}:/root/.composer/vendor/bin"
 
+RUN yes | pecl install xdebug-3.1.0 \
+    && echo "zend_extension=$(find /usr/local/lib/php/extensions/ -name xdebug.so)" > /usr/local/etc/php/conf.d/xdebug.ini \
+    && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/xdebug.ini \
+    && echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/xdebug.ini \
+    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/xdebug.ini \
+    && echo "xdebug.log_level=0" >> /usr/local/etc/php/conf.d/xdebug.ini
+
 RUN a2enmod rewrite headers
 RUN a2enmod security2
 ARG app_env='prod'

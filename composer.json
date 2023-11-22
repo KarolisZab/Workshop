@@ -9,6 +9,7 @@
         "ext-iconv": "*",
         "ext-mongodb": "*",
         "doctrine/mongodb-odm-bundle": "^4.6",
+        "lexik/jwt-authentication-bundle": "^2.19",
         "symfony/console": "6.3.*",
         "symfony/dotenv": "6.3.*",
         "symfony/flex": "^2",

@@ -8,6 +8,8 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/var/www/html:rw,cached
+    ports:
+      - "8080:80"
 
   mongo:
     container_name: workshop_mongo
