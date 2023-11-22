@@ -40,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[MongoDB\Field(type: "string")]
     #[Assert\NotBlank()]
     #[Assert\NotNull()]
-    private ?string $password = null;
+    private ?string $password = '';
 
     public function getEmail(): ?string
     {

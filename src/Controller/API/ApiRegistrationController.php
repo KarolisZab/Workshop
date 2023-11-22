@@ -14,6 +14,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\Exception\BadCredentialsException;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 class ApiRegistrationController extends AbstractController
 {
@@ -50,37 +51,37 @@ class ApiRegistrationController extends AbstractController
         return $this->json(['message' => 'Registered successfully!']);
     }
 
-    // #[Route('api/login', name: 'api_login')]
-    // public function login(Request $request)
-    // {
-    //     $credentials = json_decode($request->getContent(), true);
+    #[Route('api/login', name: 'api_login')]
+    public function login(Request $request)
+    {
+        try
+        {
+            $credentials = json_decode($request->getContent(), true);
 
-    //     // Retrieve the user from your user repository or storage
-    //     $user = $this->documentManager->getRepository(User::class)->findOneBy(['username' => $credentials['username']]);
-        
-    //     if (!$user instanceof UserInterface) {
-    //         throw new BadCredentialsException('Invalid username or password');
-    //     }
+            // Retrieve the user from your user repository or storage
+            /** @var User $user */
+            $user = $this->documentManager->getRepository(User::class)->findOneBy(['username' => $credentials['username']]);
+            
 
-    //     // Check if the password matches
-    //     if (!$this->passwordHasher->isPasswordValid($user, $credentials['password'])) {
-    //         throw new BadCredentialsException('Invalid username or password');
-    //     }
+            if (!$user instanceof UserInterface) {
+                throw new BadCredentialsException('Invalid username or password');
+            }
 
-    //     // If the credentials are valid, generate a JWT token
-    //     $token = $this->generateJwtToken($user);
+            // Check if the password matches
+            if (!$this->passwordHasher->isPasswordValid($user, $credentials['password'])) {
+                throw new BadCredentialsException('Invalid username or password');
+            }
 
-    //     // Return a response with the username and access token
-    //     return $this->json([
-    //         'username' => $user->getUsername(),
-    //         'access_token' => $token,
-    //     ]);
-    // }
+        // If the credentials are valid, generate a JWT token
+        $token = $this->jwtManager->create($user);
 
-    // private function generateJwtToken(UserInterface $user): string
-    // {
-    //     // Generate JWT token logic using LexikJWTAuthenticationBundle's token manager
-    //     // Assuming $jwtManager is injected or accessible here
-    //     return $this->jwtManager->create(['username' => $user->getUsername()]);
-    // }
+            // Return a response with the username and access token
+            return $this->json([
+                'username' => $user->getUsername(),
+                'access_token' => $token,
+            ]);
+        } catch(BadCredentialsException $e) {
+            return new JsonResponse('Invalid username or password', 401);
+        }
+    }
 }
