@@ -5,9 +5,11 @@ namespace App\Controller\API;
 use App\Document\Workshop;
 use App\Document\Worker;
 use App\Document\Duty;
+use App\Document\User;
 use App\Repository\WorkshopRepository;
 use App\Repository\WorkerRepository;
 use App\Repository\DutyRepository;
+use App\Repository\UserRepository;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,6 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
+use \Symfony\Bundle\SecurityBundle\Security;
 
 #[Route('/api/workshop')]
 class WorkshopController extends AbstractController
@@ -24,7 +27,8 @@ class WorkshopController extends AbstractController
     public function __construct(
         private DocumentManager $documentManager,
         private SerializerInterface $serializer,
-        private ValidatorInterface $validatorInterface
+        private ValidatorInterface $validatorInterface,
+        private Security $security
     ) { 
     }
 
@@ -63,7 +67,6 @@ class WorkshopController extends AbstractController
         }
     }
 
-    //#[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'workshop_post', methods: ['POST'])]
     public function createWorkshop(Request $request, ValidatorInterface $validator)
     {
@@ -257,16 +260,35 @@ class WorkshopController extends AbstractController
             $parameters = json_decode($request->getContent(), true);
 
             $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->documentManager->getRepository(User::class);
 
             if ($existingWorkshop === null) {
                 // Workshop with the same title already exists, return an error response
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
             
+            $userEmail = $parameters['email'];
+
+            if (!$userEmail) {
+                return new JsonResponse('Email not provided.', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            $user = $userRepository->findOneBy(['email' => $userEmail]);
+
+            if ($user === null) {
+                return new JsonResponse('404 User with provided email not found.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
             $worker = new Worker();
             $worker->setName($parameters['name'])
                 ->setSurname($parameters['surname'])
                 ->setWorkshopId($id);
+
+            // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+            if (!$this->isGranted('ROLE_ADMIN')) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            }
 
             $errors = $validator->validate($worker);
 
@@ -281,11 +303,28 @@ class WorkshopController extends AbstractController
                 return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            $this->documentManager->persist($worker);
-            $this->documentManager->flush();
+            //$this->documentManager->persist($worker);
 
+            // Check if the user does not have a workerId set
+            if (empty($user->getWorkerId())) {
+                $this->documentManager->persist($worker);
 
-            return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_CREATED, [], true);
+                // Associate the worker with the user
+                $user->setWorkerId($worker->getId());
+
+                $this->documentManager->flush();
+
+                return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_CREATED, [], true);
+            } else {
+                return new JsonResponse('User already has a worker associated.', JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            // //Associate the worker with the user
+            // $user->setWorkerId($worker->getId());
+
+            // $this->documentManager->flush();
+
+            // return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_CREATED, [], true);
         } 
         catch (\Exception $exception) 
         {
@@ -294,7 +333,7 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('/{id}/workers/{workerId}', name: 'workshop_worker_patch', methods: ['PATCH'])]
-    public function updateWorkshopWorker(Request $request, ValidatorInterface $validator, string $id, string $workerId)
+    public function updateWorkshopWorker(Request $request, ValidatorInterface $validator, string $id, string $workerId, Security $security)
     {
         try {
             $parameters = json_decode($request->getContent(), true);
@@ -303,6 +342,8 @@ class WorkshopController extends AbstractController
             $workshopRepository = $this->documentManager->getRepository(Workshop::class);
             /** @var WorkerRepository $workerRepository */
             $workerRepository = $this->documentManager->getRepository(Worker::class);
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->documentManager->getRepository(User::class);
 
             $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
 
@@ -310,7 +351,25 @@ class WorkshopController extends AbstractController
                 // Workshop with the same title already exists, return an error response
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
+
+            // Get the authenticated user
+            $user = $security->getUser();
             
+            // Find the user by workerId
+            $targetUser = $userRepository->findOneBy(['workerId' => $workerId]);
+
+            // if ($user === null || ($user->getWorkerId() === '' && !$this->isGranted('ROLE_ADMIN'))) {
+            //     return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            // }
+
+            if ($user === null || !($user instanceof User) || ($user->getWorkerId() !== $workerId && !$this->isGranted('ROLE_ADMIN'))) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            }
+
+            if ($targetUser === null) {
+                return new JsonResponse('404 Worker doesn\'t exist.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
             // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
             $worker = $workerRepository->find($workerId);
 
@@ -321,19 +380,19 @@ class WorkshopController extends AbstractController
 
             // 3. Jeigu yra, patikrinti ar is body atejes workshopId egzistuoja toks workshop'as (jeigu nera 404, jeigu yra - setint i worker, pakeist 
             // name is body ,surname is body, validation - persist ir done)
-            $workshopIdFromBody = $parameters['workshopId'];
-            $workshopFromBody = $workshopRepository->find($workshopIdFromBody);
+            //$workshopIdFromBody = $parameters['workshopId'];
+            //$workshopFromBody = $workshopRepository->find($id);
 
-            if($workshopFromBody === null)
+            if($id === null)
             {
                 return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
 
             $worker->setName($parameters['name'])
                 ->setSurname($parameters['surname'])
-                ->setWorkshopId($workshopIdFromBody);
+                ->setWorkshopId($id);
                 //->setWorkshopId($parameters['workshopId']);
-
+            
             $errors = $validator->validate($worker);
 
             if (count($errors) > 0) {
@@ -367,6 +426,11 @@ class WorkshopController extends AbstractController
 
         $workshop = $workshopRepository->find($id);
         
+        // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+        }
+
         if($workshop === null)
         {
             return new JsonResponse('404 Workshop Not Found', JsonResponse::HTTP_NOT_FOUND);
@@ -476,12 +540,14 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('/{id}/workers/{workerId}/duties', name: 'workshop_worker_duty_post', methods: ['POST'])]
-    public function createWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId)
+    public function createWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId, Security $security)
     {
         try {
             $parameters = json_decode($request->getContent(), true);
 
             $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->documentManager->getRepository(User::class);
 
             if ($existingWorkshop === null) {
                 // Workshop with the same title already exists, return an error response
@@ -492,6 +558,18 @@ class WorkshopController extends AbstractController
 
             if($existingWorker === null) {
                 return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+             // Get the authenticated user via the Security component
+            $user = $security->getUser();
+
+            if ($user === null || !($user instanceof User)) {
+                return new JsonResponse('User not authenticated or not found.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            // Check if the authenticated user has the correct workerId or is an admin (replace with your logic)
+            if (!($this->isGranted('ROLE_ADMIN') || $user->getWorkerId() === $workerId)) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
             }
 
             $duty = new Duty();
@@ -526,7 +604,7 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'workshop_worker_duty_patch', methods: ['PATCH'])]
-    public function updateWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId, string $dutyId)
+    public function updateWorkshopWorkerDuty(Request $request, ValidatorInterface $validator, string $id, string $workerId, string $dutyId, Security $security)
     {
         try {
             $parameters = json_decode($request->getContent(), true);
@@ -537,12 +615,25 @@ class WorkshopController extends AbstractController
             $workerRepository = $this->documentManager->getRepository(Worker::class);
             /** @var DutyRepository $dutyRepository */
             $dutyRepository = $this->documentManager->getRepository(Duty::class);
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->documentManager->getRepository(User::class);
 
             $existingWorkshop = $this->documentManager->getRepository(Workshop::class)->findOneBy(['_id' => $id]);
 
             if ($existingWorkshop === null) {
                 // Workshop with the same title already exists, return an error response
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
+            }
+
+            // Find the user by workerId
+            //$user = $userRepository->findOneBy(['workerId' => $workerId]);
+
+            // Get the authenticated user
+            $user = $security->getUser();
+
+            // Check if user exists and is authenticated
+            if ($user === null || !($user instanceof User)) {
+                return new JsonResponse('User not found or not authenticated.', JsonResponse::HTTP_NOT_FOUND);
             }
 
             $workshop = $workshopRepository->find($id);
@@ -575,6 +666,11 @@ class WorkshopController extends AbstractController
             //     return new JsonResponse('404 Worker doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             // }
 
+            // Check if the authenticated user matches the duty's workerId or is an admin
+            if ($user->getWorkerId() !== $duty->getWorkerId() && !$this->isGranted('ROLE_ADMIN')) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            }
+
             $duty->setDuty($parameters['duty'])
                 ->setDescription($parameters['description'])
                 ->setWorkerId($workerId);
@@ -604,7 +700,7 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'workshop_worker_duty_delete', methods: ['DELETE'])]
-    public function deleteWorkshopWorkerDuty(Request $request, string $id, ValidatorInterface $validator, string $workerId, string $dutyId)
+    public function deleteWorkshopWorkerDuty(Request $request, string $id, ValidatorInterface $validator, string $workerId, string $dutyId, Security $security)
     {
         /** @var WorkshopRepository $workshopRepository */
         $workshopRepository = $this->documentManager->getRepository(Workshop::class);
@@ -636,6 +732,19 @@ class WorkshopController extends AbstractController
         if($duty === null)
         {
             return new JsonResponse('404 Duty Not Found', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Get the authenticated user
+        $user = $security->getUser();
+
+        // Check if user is authenticated
+        if ($user === null || !($user instanceof User)) {
+            return new JsonResponse('User not found or not authenticated.', JsonResponse::HTTP_NOT_FOUND);
+        }
+
+        // Check if the authenticated user matches the duty's workerId or is an admin
+        if ($user->getWorkerId() !== $duty->getWorkerId() && !$this->isGranted('ROLE_ADMIN')) {
+            return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $this->documentManager->remove($duty);

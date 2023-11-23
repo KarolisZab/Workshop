@@ -29,7 +29,6 @@ class Worker
     #[MongoDB\Field(type: "string")]
     protected string $workshopId;
 
-
     public function getId(): ?string
     {
         return $this->id;

@@ -39,6 +39,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Assert\NotNull()]
     private ?string $password = '';
 
+    #[MongoDB\Field(type: "string")]
+    protected string $workerId = '';
+
     public function getEmail(): ?string
     {
         return $this->email;
@@ -65,6 +68,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->username = $username;
 
+        return $this;
+    }
+
+    public function getWorkerId(): string
+    {
+        return $this->workerId;
+    }
+
+    public function setWorkerId(string $workerId): self
+    {
+        $this->workerId = $workerId;
         return $this;
     }
 
