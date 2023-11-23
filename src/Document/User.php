@@ -6,13 +6,10 @@ use App\Repository\UserRepository;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
-#[UniqueEntity(fields: ["username"], message: "This username is already taken.")]
-#[UniqueEntity(fields: ["email"], message: "This email is already in use.")]
 #[MongoDB\Document(repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -45,6 +42,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getEmail(): ?string
     {
         return $this->email;
+    }
+
+    public function getUserId(): ?string
+    {
+        return $this->userId;
     }
 
     public function setEmail(string $email): static

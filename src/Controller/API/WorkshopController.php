@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
@@ -20,9 +21,11 @@ use Symfony\Component\Validator\ConstraintViolationListInterface;
 #[Route('/api/workshop')]
 class WorkshopController extends AbstractController
 {
-    public function __construct(private DocumentManager $documentManager, private SerializerInterface $serializer, private ValidatorInterface $validatorInterface)
-    {
-        
+    public function __construct(
+        private DocumentManager $documentManager,
+        private SerializerInterface $serializer,
+        private ValidatorInterface $validatorInterface
+    ) { 
     }
 
     #[Route('/{id}', name: 'workshop_get', methods: ['GET'])]
@@ -58,10 +61,9 @@ class WorkshopController extends AbstractController
         if ($request->isMethod('POST')) {
             return new JsonResponse('POST request to /api/workshop/id is not allowed.', JsonResponse::HTTP_METHOD_NOT_ALLOWED);
         }
-
-        // Handle other scenarios, if needed
     }
 
+    //#[IsGranted('ROLE_ADMIN')]
     #[Route('', name: 'workshop_post', methods: ['POST'])]
     public function createWorkshop(Request $request, ValidatorInterface $validator)
     {
@@ -79,9 +81,12 @@ class WorkshopController extends AbstractController
             $workshop->setTitle($parameters['title'])
                     ->setCategory($parameters['category']);
 
-
-
             $errors = $validator->validate($workshop);
+
+            // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+            if (!$this->isGranted('ROLE_ADMIN')) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            }
 
             if (count($errors) > 0) {
                 // Handle validation errors, for example, return a 400 Bad Request response
@@ -96,7 +101,6 @@ class WorkshopController extends AbstractController
 
             $this->documentManager->persist($workshop);
             $this->documentManager->flush();
-
 
             return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_CREATED, [], true);
         } 
@@ -129,10 +133,14 @@ class WorkshopController extends AbstractController
         $workshop->setTitle($parameters['title'])
                 ->setCategory($parameters['category']);
 
-
         // validation
         $errors = $validator->validate($workshop);
         
+        // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+        }
+
         if (count($errors) > 0) {
             // Handle validation errors, for example, return a 400 Bad Request response
             $validationErrors = [];
@@ -162,6 +170,11 @@ class WorkshopController extends AbstractController
 
         $workshop = $workshopRepository->find($id);
         
+        // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+        if (!$this->isGranted('ROLE_ADMIN')) {
+            return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+        }
+
         if($workshop === null)
         {
             return new JsonResponse('404 Not Found', JsonResponse::HTTP_NOT_FOUND);
@@ -255,7 +268,6 @@ class WorkshopController extends AbstractController
                 ->setSurname($parameters['surname'])
                 ->setWorkshopId($id);
 
-
             $errors = $validator->validate($worker);
 
             if (count($errors) > 0) {
@@ -287,7 +299,6 @@ class WorkshopController extends AbstractController
         try {
             $parameters = json_decode($request->getContent(), true);
 
-
             /** @var WorkshopRepository $workshopRepository */
             $workshopRepository = $this->documentManager->getRepository(Workshop::class);
             /** @var WorkerRepository $workerRepository */
@@ -300,7 +311,6 @@ class WorkshopController extends AbstractController
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
             
-
             // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
             $worker = $workerRepository->find($workerId);
 
@@ -324,7 +334,6 @@ class WorkshopController extends AbstractController
                 ->setWorkshopId($workshopIdFromBody);
                 //->setWorkshopId($parameters['workshopId']);
 
-
             $errors = $validator->validate($worker);
 
             if (count($errors) > 0) {
@@ -339,7 +348,6 @@ class WorkshopController extends AbstractController
             }
 
             $this->documentManager->flush();
-
 
             return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_CREATED, [], true);
         } 
@@ -465,8 +473,6 @@ class WorkshopController extends AbstractController
         if ($request->isMethod('POST')) {
             return new JsonResponse('POST request to /api/workshop/id/workers/id/duties/ud is not allowed.', JsonResponse::HTTP_METHOD_NOT_ALLOWED);
         }
-
-        // Handle other scenarios, if needed
     }
 
     #[Route('/{id}/workers/{workerId}/duties', name: 'workshop_worker_duty_post', methods: ['POST'])]
@@ -493,7 +499,6 @@ class WorkshopController extends AbstractController
                 ->setDescription($parameters['description'])
                 ->setWorkerId($workerId)
                 ->setWorkshopId($id);
-
 
             $errors = $validator->validate($duty);
 
@@ -547,7 +552,6 @@ class WorkshopController extends AbstractController
                 return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
 
-
             // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
             $worker = $workerRepository->find($workerId);
 
@@ -576,7 +580,6 @@ class WorkshopController extends AbstractController
                 ->setWorkerId($workerId);
                 //->setWorkerId($parameters['workerId']);
 
-
             $errors = $validator->validate($duty);
 
             if (count($errors) > 0) {
@@ -591,7 +594,6 @@ class WorkshopController extends AbstractController
             }
 
             $this->documentManager->flush();
-
 
             return new JsonResponse($this->serializer->serialize($duty, 'json'), JsonResponse::HTTP_OK, [], true);
         } 
