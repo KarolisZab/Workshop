@@ -15,14 +15,20 @@ use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\Exception\BadCredentialsException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
+use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 
 class AuthController extends AbstractController
 {
     
-    public function __construct(private DocumentManager $documentManager, private UserPasswordHasherInterface $passwordHasher, private SerializerInterface $serializer, private JWTTokenManagerInterface $jwtManager)
-    {
-    
-    }
+    public function __construct(
+        private DocumentManager $documentManager,
+        private UserPasswordHasherInterface $passwordHasher,
+        private SerializerInterface $serializer,
+        private JWTTokenManagerInterface $jwtManager,
+        private RefreshTokenGeneratorInterface $refreshTokenGenerator,
+    )
+    {}
     
     #[Route('/api/register', name: 'api_register')]
     public function register(Request $request)
@@ -64,11 +70,11 @@ class AuthController extends AbstractController
         $this->documentManager->flush();
 
         // TODO: Give JsonResponse instead maybe with registered user info (201 Created)
-        return $this->json(['message' => 'Registered successfully!']);
+        return $this->json(['message' => 'User registered successfully!']);
     }
 
     #[Route('/api/login', name: 'api_login')]
-    public function login(Request $request)
+    public function login(Request $request, RefreshTokenGeneratorInterface $refreshTokenGenerator, RefreshTokenManagerInterface $refreshTokenManager)
     {
         try
         {
@@ -98,10 +104,16 @@ class AuthController extends AbstractController
             // If the credentials are valid, generate a JWT token
             $token = $this->jwtManager->create($user);
 
+            // Generate refresh token using the RefreshTokenGeneratorInterface
+            $refreshToken = $refreshTokenGenerator->createForUserWithTtl($user, 1800);
+
+            $refreshTokenManager->save($refreshToken);
+
             // Return a response with the username and access token
             return $this->json([
                 'username' => $user->getUsername(),
                 'access_token' => $token,
+                'refresh_token' => $refreshToken->getRefreshToken()
             ]);
         } catch(BadCredentialsException $e) {
             return new JsonResponse('Invalid username or password', 401);
@@ -150,4 +162,95 @@ class AuthController extends AbstractController
         // TODO: Give JsonResponse instead maybe with registered user info
         return $this->json(['message' => 'Administrator registered successfully!']);
     }
+
+    // #[Route('/api/refresh_token', name: 'refresh_token')]
+    // public function refreshAccessToken(
+    //     Request $request,
+    //     RefreshTokenManagerInterface $refreshTokenManager,
+    //     JWTTokenManagerInterface $jwtManager
+    // ) {
+    //     $data = json_decode($request->getContent(), true);
+    
+    //     if (!isset($data['refresh_token'])) {
+    //         return new JsonResponse(['message' => 'Refresh token is required'], 400);
+    //     }
+    
+    //     try {
+    //         // Generate a new access token based on the refresh token
+    //         //$refreshToken = $refreshTokenGenerator->get($data['refresh_token']);
+    //         // Validate and retrieve the refresh token from the database or storage
+    //         $refreshToken = $refreshTokenManager->get($data['refresh_token']);
+
+    //         //if (!$refreshToken) {
+    //           //  return new JsonResponse(['message' => 'Invalid or expired refresh token'], 401);
+    //         //}
+
+    //         // Retrieve user information associated with the refresh token (if needed)
+    //         $user = $this->getUserFromRefreshToken($refreshToken);
+
+    //         // Generate a new access token
+    //         $accessToken = $jwtManager->create($user);
+
+    //         // Return the new access token in the response
+    //         return new JsonResponse(['access_token' => $accessToken]);
+    //     } catch (\Exception $e) {
+    //         return new JsonResponse(['message' => 'Something went wrong while refreshing the access token'], 500);
+    //     }
+    // }
+    
+    //Method to retrieve user information associated with the refresh token
+    // private function getUserFromRefreshToken($refreshToken)
+    // {
+    //     // Assuming you store user information within the refresh token (e.g., username)
+    //     $username = $refreshToken->getUsername();
+    
+    //     // Fetch user from your MongoDB using the DocumentManager
+    //     $user = $this->documentManager->getRepository(User::class)->findOneBy(['username' => $username]);
+    
+    //     return $user; // Return the user instance associated with the refresh token
+
+    //     //Ensure $refreshToken is not null before accessing methods
+    // }
+
+    // private function isRefreshTokenExpired($refreshToken)
+    // {
+    //     // Assuming $refreshToken contains your token entity or object
+    //     $expirationTime = $refreshToken->getExpirationTime(); // Get the token's expiration timestamp
+
+    //     return $expirationTime < new \DateTime(); // Check if the expiration time is in the past
+    // }
+
+    // #[Route('/api/refresh_token', name: 'refresh_token', methods: ['POST'])]
+    // public function refreshAccessToken(
+    //     Request $request,
+    //     RefreshTokenManagerInterface $refreshTokenManager,
+    //     JWTTokenManagerInterface $jwtManager
+    // ): JsonResponse {
+    //     $data = json_decode($request->getContent(), true);
+
+    //     // Check if the refresh token is provided in the request body
+    //     if (!isset($data['refresh_token'])) {
+    //         return $this->json(['message' => 'Refresh token not provided'], 400);
+    //     }
+
+    //     // Retrieve the refresh token from the request body
+    //     $refreshToken = $refreshTokenManager->get($data['refresh_token']);
+
+    //     if (!$refreshToken) {
+    //         return $this->json(['message' => 'Invalid refresh token'], 401);
+    //     }
+
+    //     // Retrieve the user associated with the refresh token
+    //     $user = $this->getUserFromRefreshToken($refreshToken);
+
+    //     if (!$user instanceof UserInterface) {
+    //         return $this->json(['message' => 'User not found'], 401);
+    //     }
+
+    //     // Generate a new access token for the user
+    //     $accessToken = $jwtManager->create($user);
+
+    //     // Return the new access token in the response
+    //     return $this->json(['access_token' => $accessToken]);
+    // }
 }

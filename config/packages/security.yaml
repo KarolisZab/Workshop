@@ -28,9 +28,10 @@ security:
         api:
             pattern: ^/api
             stateless: true
+            entry_point: jwt
             jwt: ~
-            # Exclude the registration endpoint from JWT authentication
-            #request_matcher: '!^(?!/api/register)'
+            refresh_jwt:
+                check_path: /api/refresh_token
 
         main:
             lazy: true
@@ -49,5 +50,6 @@ security:
         #- { path: ^/api/registration, roles: IS_AUTHENTICATED_ANONYMOUSLY}
         #- { path: ^/api/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/api/register, roles: PUBLIC_ACCESS}
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        #- { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/(login|token/refresh), roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

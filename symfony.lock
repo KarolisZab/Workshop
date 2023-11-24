@@ -17,6 +17,15 @@
             "ref": "a6bc3544da98c97b2eafb2ef1e86bcc8093d96cf"
         }
     },
+    "gesdinet/jwt-refresh-token-bundle": {
+        "version": "1.2",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "1.0",
+            "ref": "13fb2b58ec6204211815eb6f4c69e4918e5af617"
+        }
+    },
     "lexik/jwt-authentication-bundle": {
         "version": "2.19",
         "recipe": {
