@@ -50,4 +50,4 @@ Sistemos sudedamosios dalys:
 2. Serverio pusė (angl. Back-End) – naudojant PHP Symfony framework;
 3. Duomenų bazė – MongoDB.
    
-Sistemos talpinimui naudojamas Azure serveris. Kiekviena sistemos dalis yra diegiama tame pačiame serveryje. Internetinę aplikaciją bus galima pasiekti per HTTP protokolą. Duomenų apsikeitimui su duomenų baze bus naudojamas Workshop API, kuris vykdo duomenų apsikeitimą naudojant ORM sąsają.
+Sistemos talpinimui naudojamas DigitalOcean serveris. Kiekviena sistemos dalis yra diegiama tame pačiame serveryje. Internetinę aplikaciją bus galima pasiekti per HTTP protokolą. Duomenų apsikeitimui su duomenų baze bus naudojamas Workshop API, kuris vykdo duomenų apsikeitimą naudojant ODM sąsają.
