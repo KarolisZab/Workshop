@@ -20,6 +20,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
 use \Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Route('/api/workshop')]
 class WorkshopController extends AbstractController
@@ -48,15 +49,30 @@ class WorkshopController extends AbstractController
         return new JsonResponse($this->serializer->serialize($workshop, 'json'), JsonResponse::HTTP_OK, [], true);
     }
 
-    #[Route('', name: 'workshop_getall', methods: ['GET'])]
-    public function getWorkshopAll(Request $request)
+    #[Route('', name: 'workshop_getall', methods: ['GET', 'OPTIONS'])]
+    public function getWorkshopAll(Request $request): Response
     {
+        if ($request->getMethod() === 'OPTIONS') {
+            // Handle preflight OPTIONS request
+            $response = new Response();
+            $response->headers->set('Access-Control-Allow-Origin', 'http://localhost:3000');
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            // Add other necessary headers
+    
+            return $response;
+        }
+        
         /** @var WorkshopRepository $workshopRepository */
         $workshopRepository = $this->documentManager->getRepository(Workshop::class);
 
         $allWorkshops = $workshopRepository->findAll();
+        
+        //return new JsonResponse($this->serializer->serialize($allWorkshops, 'json'), JsonResponse::HTTP_OK, [], true);
+        $response = new JsonResponse($this->serializer->serialize($allWorkshops, 'json'), JsonResponse::HTTP_OK, [], true);
+        // Add other necessary headers
 
-        return new JsonResponse($this->serializer->serialize($allWorkshops, 'json'), JsonResponse::HTTP_OK, [], true);
+        return $response;
     }
 
     #[Route('/{id}', name: 'workshop_post_to_id', methods: ['POST'])]
@@ -352,22 +368,45 @@ class WorkshopController extends AbstractController
                     return new JsonResponse('404 Workshop doesn\'t exists.', JsonResponse::HTTP_NOT_FOUND);
             }
 
-            // Get the authenticated user
-            $user = $security->getUser();
+            // // Get the authenticated user
+            // $user = $security->getUser();
             
-            // Find the user by workerId
-            $targetUser = $userRepository->findOneBy(['workerId' => $workerId]);
+            // // Find the user by workerId
+            // $targetUser = $userRepository->findOneBy(['workerId' => $workerId]);
 
-            // if ($user === null || ($user->getWorkerId() === '' && !$this->isGranted('ROLE_ADMIN'))) {
+            // // if ($user === null || ($user->getWorkerId() === '' && !$this->isGranted('ROLE_ADMIN'))) {
+            // //     return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            // // }
+
+            // if ($user === null || !($user instanceof User) || ($user->getWorkerId() !== $workerId && !$this->isGranted('ROLE_ADMIN'))) {
             //     return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
             // }
 
-            if ($user === null || !($user instanceof User) || ($user->getWorkerId() !== $workerId && !$this->isGranted('ROLE_ADMIN'))) {
-                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
-            }
+            // if ($targetUser === null) {
+            //     return new JsonResponse('404 Worker doesn\'t exist.', JsonResponse::HTTP_NOT_FOUND);
+            // }
 
-            if ($targetUser === null) {
-                return new JsonResponse('404 Worker doesn\'t exist.', JsonResponse::HTTP_NOT_FOUND);
+            // $user = $security->getUser();
+
+            // if ($user === null || !($user instanceof User)) {
+            //     return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            // }
+
+            // // Find the worker by workerId
+            // $worker = $workerRepository->findOneBy(['_id' => $workerId]);
+
+            // if ($worker === null) {
+            //     return new JsonResponse('404 Worker doesn\'t exist.', JsonResponse::HTTP_NOT_FOUND);
+            // }
+
+            // // Check if the user is authorized to modify this worker
+            // if ($user->getWorkerId() !== $workerId && !$this->isGranted('ROLE_ADMIN')) {
+            //     return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+            // }
+
+            // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+            if (!$this->isGranted('ROLE_ADMIN')) {
+                return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
             }
 
             // 2. Patikrinti findint workeri pagal workerId (jeigu nera 404, jeigu yra ref 3.)
@@ -416,6 +455,59 @@ class WorkshopController extends AbstractController
         }
     }
 
+    
+    // #[Route('/{id}/workers/{workerId}', name: 'workshop_worker_patch', methods: ['PATCH'])]
+    // public function updateWorkshopWorker(
+    //     Request $request,
+    //     ValidatorInterface $validator,
+    //     string $id,
+    //     string $workerId,
+    //     Security $security
+    // ) {
+    //     try {
+    //         $parameters = json_decode($request->getContent(), true);
+
+    //         /** @var WorkerRepository $workerRepository */
+    //         $workerRepository = $this->documentManager->getRepository(Worker::class);
+    //         $user = $security->getUser();
+
+    //         // Check if the user has ROLE_ADMIN, if not, throw an AccessDeniedException
+    //         if (!$this->isGranted('ROLE_ADMIN')) {
+    //             return new JsonResponse('Access denied', JsonResponse::HTTP_FORBIDDEN);
+    //         }
+
+    //         // Find the worker being updated
+    //         $worker = $workerRepository->find($workerId);
+
+    //         if ($worker === null) {
+    //             return new JsonResponse('404 Worker doesn\'t exist.', JsonResponse::HTTP_NOT_FOUND);
+    //         }
+
+    //         // Update worker details
+    //         $worker->setName($parameters['name'] ?? $worker->getName())
+    //             ->setSurname($parameters['surname'] ?? $worker->getSurname())
+    //             ->setWorkshopId($id);
+
+    //         // Validate and flush changes
+    //         $errors = $validator->validate($worker);
+
+    //         if (count($errors) > 0) {
+    //             $validationErrors = [];
+    //             foreach ($errors as $error) {
+    //                 $validationErrors[$error->getPropertyPath()] = $error->getMessage();
+    //             }
+
+    //             return new JsonResponse($validationErrors, JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+    //         }
+
+    //         $this->documentManager->flush();
+
+    //         return new JsonResponse($this->serializer->serialize($worker, 'json'), JsonResponse::HTTP_CREATED, [], true);
+    //     } catch (\Exception $exception) {
+    //         return new JsonResponse($exception->getMessage(), 400);
+    //     }
+    // }
+
     #[Route('/{id}/workers/{workerId}', name: 'workshop_worker_delete', methods: ['DELETE'])]
     public function deleteWorkshopWorker(Request $request, string $id, ValidatorInterface $validator, string $workerId)
     {
@@ -456,7 +548,7 @@ class WorkshopController extends AbstractController
     ////////////////////////////// 3rd level ////////////////////////////////////////////////////////////////////////////
 
     #[Route('/{id}/workers/{workerId}/duties/{dutyId}', name: 'worker_duty_get', methods: ['GET'])]
-    public function getWorkshopWorkerDuty(Request $request, string $workerId, string $id, string $dutyId)
+    public function getWorkshopWorkerDuty(Request $request, string $workerId, string $id, string $dutyId, Security $security)
     {
         // pagetint viena konkrecius workshopo darbuotojo duties
         
@@ -469,6 +561,13 @@ class WorkshopController extends AbstractController
 
         $workshop = $workshopRepository->find($id);
         
+        // Get the authenticated user via the Security component
+        $user = $security->getUser();
+
+        if ($user === null || !($user instanceof User)) {
+            return new JsonResponse('User not authenticated or not found.', JsonResponse::HTTP_FORBIDDEN);
+        }
+
         if($workshop === null)
         {
             return new JsonResponse('404 Workshop Not Found', JsonResponse::HTTP_NOT_FOUND);
@@ -496,7 +595,7 @@ class WorkshopController extends AbstractController
     }
 
     #[Route('/{id}/workers/{workerId}/duties', name: 'get_worker_duties_in_workshop', methods: ['GET'])]
-    public function getWorkerDuties(Request $request, string $id, string $workerId)
+    public function getWorkerDuties(Request $request, string $id, string $workerId, Security $security)
     {
         // Get all duties in a specific workshop
 
@@ -506,6 +605,14 @@ class WorkshopController extends AbstractController
         $workerRepository = $this->documentManager->getRepository(Worker::class);
         /** @var DutyRepository $dutyRepository */
         $dutyRepository = $this->documentManager->getRepository(Duty::class);
+
+        // Get the authenticated user via the Security component
+        $user = $security->getUser();
+
+        if ($user === null || !($user instanceof User)) {
+            return new JsonResponse('User not authenticated or not found.', JsonResponse::HTTP_FORBIDDEN);
+        }
+
 
         /** @var Workshop $workshop */
         $workshop = $workshopRepository->find($id);

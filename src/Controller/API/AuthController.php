@@ -33,44 +33,56 @@ class AuthController extends AbstractController
     #[Route('/api/register', name: 'api_register')]
     public function register(Request $request)
     {   
-        $decoded = json_decode($request->getContent(), true);
-        $email = $decoded['email'];
-        $plaintextPassword = $decoded['password'];
+        try {
+            $decoded = json_decode($request->getContent(), true);
 
-        /** @var UserRepository $userRepository */
-        $userRepository = $this->documentManager->getRepository(User::class);
+            // Check if email and password fields exist and are not empty
+            if (!isset($decoded['email']) || empty($decoded['email']) || !isset($decoded['password']) || empty($decoded['password'])) {
+                return new JsonResponse('Email and password fields cannot be null', JsonResponse::HTTP_BAD_REQUEST);
+            }
 
-        $existingUser = $userRepository->findOneBy(['email' => $email]);
+            $email = $decoded['email'];
+            $plaintextPassword = $decoded['password'];
 
-        if ($existingUser !== null) {
-            return new JsonResponse('User with this email already exists', JsonResponse::HTTP_CONFLICT);
-            // You can customize the error message or status code as needed
+            /** @var UserRepository $userRepository */
+            $userRepository = $this->documentManager->getRepository(User::class);
+
+            $existingUser = $userRepository->findOneBy(['email' => $email]);
+
+            if ($existingUser !== null) {
+                return new JsonResponse('User with this email already exists', JsonResponse::HTTP_CONFLICT);
+                // You can customize the error message or status code as needed
+            }
+        
+            // Check if a user with the given username already exists
+            $existingUsername = $userRepository->findOneBy(['username' => $email]);
+        
+            if ($existingUsername !== null) {
+                return new JsonResponse('User with this username already exists', JsonResponse::HTTP_CONFLICT);
+                // You can customize the error message or status code as needed
+            }
+
+            $user = new User();
+            $hashedPassword = $this->passwordHasher->hashPassword(
+                $user, 
+                $plaintextPassword
+            );
+
+            $user->setPassword($hashedPassword);
+            $user->setEmail($email);
+            $user->setUsername($email);
+            $user->setRoles(['ROLE_USER']);
+
+            $this->documentManager->persist($user);
+            $this->documentManager->flush();
+
+            // TODO: Give JsonResponse instead maybe with registered user info (201 Created)
+            return $this->json(['message' => 'User registered successfully!']);
+        } catch (\Exception $exception) 
+        {
+            return new JsonResponse($exception->getMessage(), 400);
         }
-    
-        // Check if a user with the given username already exists
-        $existingUsername = $userRepository->findOneBy(['username' => $email]);
-    
-        if ($existingUsername !== null) {
-            return new JsonResponse('User with this username already exists', JsonResponse::HTTP_CONFLICT);
-            // You can customize the error message or status code as needed
-        }
-
-        $user = new User();
-        $hashedPassword = $this->passwordHasher->hashPassword(
-            $user, 
-            $plaintextPassword
-        );
-
-        $user->setPassword($hashedPassword);
-        $user->setEmail($email);
-        $user->setUsername($email);
-        $user->setRoles(['ROLE_USER']);
-
-        $this->documentManager->persist($user);
-        $this->documentManager->flush();
-
-        // TODO: Give JsonResponse instead maybe with registered user info (201 Created)
-        return $this->json(['message' => 'User registered successfully!']);
+        
     }
 
     #[Route('/api/login', name: 'api_login')]
@@ -112,6 +124,7 @@ class AuthController extends AbstractController
             // Return a response with the username and access token
             return $this->json([
                 'username' => $user->getUsername(),
+                'roles' => $user->getRoles(),
                 'access_token' => $token,
                 'refresh_token' => $refreshToken->getRefreshToken()
             ]);
