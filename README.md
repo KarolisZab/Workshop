@@ -12,34 +12,36 @@
 
 1.2. Funkciniai reikalavimai
 
-Neregistruotas sistemos naudotojas galės:
+Neregistruotas sistemos naudotojas galės: 
 
-1. Peržiūrėti pagrindinį puslapį;
-2. Prisijungti prie internetinės svetainės.
+1.	Peržiūrėti pagrindinį puslapį; 
+2.	Prisijungti prie internetinės svetainės;
+3.	Peržiūrėti dirbtuves ir jų informaciją.
 
-Registruotas sistemos naudotojas galės:
+Registruotas sistemos naudotojas galės: 
 
-1. Atsijungti nuo internetinės svetainės;
-2. Prisijungti (užsiregistruoti) prie internetinės svetainės;
-3. Peržiūrėti darbuotojų sąrašą;
-4. Peržiūrėti savo darbo užduotis (darbus);
-5. Sukurti sau asmenines darbo užduotis;
-6. Pridėti darbų aprašymą;
-7. Redaguoti savo asmenines darbo užduotis;
-8. Pašalinti savo asmenines užduotis;
-9. Pažymėti darbus, kaip atliktus;
-10. Peržiūrėti kitų dirbtuvės darbuotojų darbus.
+1.	Atsijungti nuo internetinės svetainės; 
+2.	Prisijungti (užsiregistruoti) prie internetinės svetainės; 
+3.	Peržiūrėti darbuotojų sąrašą; 
+4.	Peržiūrėti savo darbo užduotis (darbus); 
+5.	Sukurti sau asmenines darbo užduotis; 
+6.	Pridėti darbų aprašymą; 
+7.	Redaguoti savo asmenines darbo užduotis; 
+8.	Pašalinti savo asmenines užduotis; 
+9.	Pažymėti darbus, kaip atliktus; 
+10.	Peržiūrėti kitų dirbtuvės darbuotojų darbus. 
 
-Administratorius galės:
+Administratorius galės: 
 
-1. Patvirtinti dirbtuvės darbuotojo registraciją;
-2. Šalinti naudotojus;
-3. Sukurti papildomus darbus darbuotojams;
-4. Pašalinti darbuotojo darbus;
-5. Redaguoti darbuotojo darbus;
-6. Sukurti darbuotojo darbų aprašymą;
-7. Redaguoti darbuotojo darbų aprašymą;
-8. Šalinti darbuotojo darbų aprašymą.
+1.	Pridėti dirbtuvės darbuotoją į dirbtuvę; 
+2.	Šalinti naudotojus; 
+3.	Redaguoti naudotojus;
+4.	Sukurti papildomus darbus darbuotojams; 
+5.	Pašalinti darbuotojo darbus; 
+6.	Redaguoti darbuotojo darbus; 
+7.	Sukurti darbuotojo darbų aprašymą; 
+8.	Redaguoti darbuotojo darbų aprašymą; 
+9.	Šalinti darbuotojo darbų aprašymą; 
 
 
 Sistemos architektūra:
